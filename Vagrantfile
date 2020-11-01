@@ -24,13 +24,13 @@ Vagrant.configure("2") do |config|
   # accessing "localhost:8080" will access port 80 on the guest machine.
   # NOTE: This will enable public access to the opened port
 
-  config.vm.network "forwarded_port", guest: 80, host: 8080
-  config.vm.network "forwarded_port", guest: 5000, host: 5000
+  config.vm.network "forwarded_port", guest: 80, host: 85
+  config.vm.network "forwarded_port", guest: 9000, host: 9000
 
   # Create a forwarded port mapping which allows access to a specific port
   # within the machine from a port on the host machine and only allow access
   # via 127.0.0.1 to disable public access
-  config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
+  config.vm.network "forwarded_port", guest: 80, host: 85, host_ip: "127.0.0.1"
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
@@ -114,6 +114,33 @@ Vagrant.configure("2") do |config|
 
     service php7.2-fpm restart
     apache2ctl restart
+	
+	#phpmyadmin
+	wget https://files.phpmyadmin.net/phpMyAdmin/4.9.0.1/phpMyAdmin-4.9.0.1-all-languages.zip
+	sudo unzip /home/vagrant/phpMyAdmin-4.9.0.1-all-languages.zip
+	sudo mv -v /home/vagrant/phpMyAdmin-4.9.0.1-all-languages /opt/phpMyAdmin
+	sudo chown -Rfv www-data:www-data /opt/phpMyAdmin
+	
+	sudo nano /etc/apache2/sites-available/phpmyadmin.conf
+	sudo bash -c "cat <<-'CONF' > /etc/apache2/sites-available/phpmyadmin.conf
+	<VirtualHost *:9000>
+	ServerAdmin webmaster@localhost
+	DocumentRoot /opt/phpMyAdmin
+ 
+	<Directory /opt/phpMyAdmin>
+	Options Indexes FollowSymLinks
+	AllowOverride none
+	Require all granted
+	</Directory>
+	ErrorLog ${APACHE_LOG_DIR}/error_phpmyadmin.log
+	CustomLog ${APACHE_LOG_DIR}/access_phpmyadmin.log combined
+	</VirtualHost>
+	CONF"
+	
+	# Enabling virtuaal host and restarting Apache web server.
+    sudo a2dissite 000-default
+    sudo a2ensite phpmyadmin
+    sudo service apache2 restart
 
     sudo timedatectl set-timezone America/New_York
 
